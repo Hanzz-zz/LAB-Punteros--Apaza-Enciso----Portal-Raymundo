@@ -1,0 +1,74 @@
+RESPUESTAS A LAS PREGUNTAS GUÍA - LABORATORIO DE PUNTEROS Y ARREGLOS
+
+INTEGRANTES:
+20251208F PORTAL RAYMUNDO VIVIANA YSABEL 
+20251237F APAZA ENCISO HANZEL ANDREU 
+
+
+BLOQUE 1 - ARREGLOS UNI Y BIDIMENSIONALES
+
+
+1.1 Arreglo unidimensional: recorrido y estadísticas
+a) ¿Cómo se relaciona datos[i] con *(datos + i)? Probar ambas formas y confirmar que dan el mismo resultado.
+Son exactamente equivalentes. En C, la notación de corchetes `datos[i]` es internamente traducida por el compilador como la desreferenciación aritmética de punteros `*(datos + i)`. Ambas formas acceden al valor desplazado `i` posiciones desde el inicio del arreglo.
+
+b) ¿Qué pasa si imprimen sizeof(datos) / sizeof(datos[0])? ¿Y si datos fuera un parámetro de función?
+Al imprimir `sizeof(datos) / sizeof(datos[0])` en el mismo ámbito donde se declaró el arreglo, se obtiene el número total de elementos (10). Sin embargo, si `datos` se pasa como parámetro a una función (ej. `void func(int datos[])`), el arreglo "decae" a un puntero (`int*`). En la función, `sizeof(datos)` devolverá el tamaño del puntero (usualmente 8 bytes), dando un resultado incorrecto al dividir.
+
+1.2 Arreglo bidimensional: matriz y operaciones
+a) ¿Cómo se almacena int m[3][4] en memoria? ¿Es un bloque contiguo?
+Se almacena como un único bloque contiguo de memoria "row-major" (fila por fila). Si se imprimen las direcciones, se observará que `m[0][3]` está inmediatamente seguido por `m[1][0]` en la memoria, sin separaciones.
+
+b) ¿Cuál es la diferencia entre m[i][j] y *(*(m+i)+j)?
+No hay ninguna diferencia a nivel de evaluación y ejecución. La expresión `m[i][j]` es evaluada por el compilador exactamente como `*(*(m+i)+j)`. `(m+i)` apunta a la fila, el primer `*` obtiene la base de esa fila, `+j` desplaza a la columna, y el último `*` desreferencia el valor final.
+
+
+BLOQUE 2 - PUNTEROS BÁSICOS Y ARITMÉTICA DE PUNTEROS
+
+
+2.1 Declaración, desreferencia y dirección
+a) ¿Por qué printf("%p", p) requiere el cast (void *)?
+Por portabilidad. Al ser `printf` una función variádica, no conoce el tipo exacto del argumento. El especificador `%p` espera un puntero genérico `void*`. En algunas arquitecturas, distintos tipos de punteros pueden tener representaciones diferentes, por lo que el casteo previene comportamientos indefinidos.
+
+b) ¿Qué diferencia hay entre int *p e int * p? ¿Y entre int *p, q y int *p, *q?
+Entre `int *p` e `int * p` no hay diferencia; los espacios son ignorados por el compilador. En `int *p, q`, `p` es un puntero a entero y `q` es un entero regular. En `int *p, *q`, tanto `p` como `q` son punteros a enteros.
+
+2.2 Aritmética de punteros sobre arreglos
+a) Concepto clave: p+5 no suma 5 bytes, suma 5 sizeof(int) bytes.
+En la aritmética de punteros, sumar un número a un puntero lo desplaza en función del tamaño del tipo de dato al que apunta. Si `p` es un `int*` (y el int ocupa 4 bytes), `p+5` sumará 20 bytes a la dirección original.
+
+b) ¿Por qué p[i] es exactamente *(p+i)? ¿Qué dice el estándar C al respecto?
+El estándar de C define formalmente el operador de subíndice `a[b]` como idéntico a `*(a + b)`. Es simplemente una notación más legible ("azúcar sintáctico").
+
+c) ¿Por qué 3[p] compila? Explicar la conmutatividad de + y la definición de [].
+Como `a[b]` se define como `*(a + b)`, `3[p]` se traduce como `*(3 + p)`. Dado que la suma es conmutativa, `*(3 + p)` es lo mismo que `*(p + 3)` o `p[3]`. Por lo tanto, el compilador lo acepta sin problemas.
+
+d) Trampa: ¿qué pasa con p+8 (uno más allá del último elemento)? ¿Es válido crearlo? ¿Se puede desreferenciar?
+Es perfectamente válido crear y comparar un puntero que apunte una posición más allá del último elemento de un arreglo (se usa como límite de bucles). Sin embargo, desreferenciarlo (`*(p+8)`) es completamente inválido y resulta en comportamiento indefinido.
+
+2.3 Punteros a char y cadenas literales
+a) ¿Cuál es la diferencia entre char *s = "..." y char s[] = "..." en términos de memoria?
+`char *s` apunta a un literal almacenado en la sección de solo lectura del programa (rodata). `char s[]` crea un arreglo local en la pila (stack) que se inicializa copiando el contenido del literal, haciendo que su memoria sea propia y modificable.
+
+b) ¿Por qué intentar modificar un literal de cadena es comportamiento no definido?
+Porque los literales de cadena se almacenan frecuentemente en páginas de memoria protegidas contra escritura a nivel del sistema operativo. Escribir allí desencadena una violación de segmento (Segmentation Fault).
+
+c) ¿Cuándo conviene cada declaración?
+Conviene `char *s` cuando el texto es constante y solo se necesita leer (ahorra memoria). Conviene `char s[]` cuando el contenido de la cadena necesita ser modificado, procesado o alterado durante la ejecución.
+
+
+BLOQUE 3 - ACCESO Y VISUALIZACIÓN DE MEMORIA; PUNTEROS A PUNTEROS
+
+
+3.1 Visualizador de memoria de un arreglo
+a) ¿Por qué en x86-64 los bytes de int v[0]=1 se ven como 01 00 00 00? Discutir endianness (little-endian).
+x86-64 utiliza arquitectura little-endian, donde el byte menos significativo se almacena en la dirección de memoria más baja. El valor `1` de 32 bits es `0x00000001`, por lo que el byte `01` va primero en la memoria.
+
+b) ¿Qué pasa con el double? ¿Qué significa la mantisa y el exponente en esos bytes?
+El tipo double sigue el estándar IEEE 754. Sus 8 bytes contienen 1 bit de signo, 11 bits de exponente y 52 bits de mantisa empaquetados juntos, que también sufren el reordenamiento de bytes por ser little-endian.
+
+c) ¿Cómo cambiaría si la máquina fuera big-endian?
+En una máquina big-endian, el byte más significativo se guarda primero. Un entero con valor `1` se vería en memoria exactamente como `00 00 00 01`.
+
+
+
